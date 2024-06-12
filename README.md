@@ -190,10 +190,33 @@ await renderer.import({
 
 RAW module always provides a `half` resolution as soon as possible and then keeps loading `full` resolution if requested. The `full` resolution takes more time to be available from the underlying Rawspeed library, thus it is important to provide the `half` version first to update the UI.
 
-Here is an example of how to convert RAW into JPEG without any adjustments:
+### Convert RAW Into JPEG File
 
 ```typescript
-TBD
+import { Renderer } from "@polarr-next"
+import { RawIOAdapter } from "@polarr-next/io-raw"
+import { JPEGIOAdapter } from "@polarr-next/png-raw"
+
+// Create an offscreen renderer with a managed context
+const renderer = new Renderer()
+
+// Register all modules
+renderer.use(RawIOAdapter)
+renderer.use(JPEGIOAdapter)
+
+// Obtain (or create) File with one of supported RAW formats (for example, .arw file)
+const rawFile = await getRAWFile() 
+
+// Import the RAW file bytes into the pipeline
+await renderer.import(rawFile)
+
+// When ready, export data as PNG bytes
+const outputJPEGBlob = await renderer.export({
+    format: "jpeg",
+    quality: 0.9
+})
+
+// Download, save, or send the blob whenever
 ```
 
 ## Import And Export PNG
