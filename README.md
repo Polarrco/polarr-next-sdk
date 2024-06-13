@@ -758,7 +758,7 @@ export interface BackgroundMask extends BaseMask {
 
 ### Adjust Subject And Background
 
-Here is an example of adjusting subject and background of the image at the same time:
+Here is an example of adjusting subject and background of the image at the same time using AI matting provided by `@polarr-next/ai-mask-subject`:
 
 ```typescript
 import { Renderer } from "@polarr-next"
@@ -835,6 +835,8 @@ const outputJPEGBlob = await renderer.export({
 
 // Download, save, or send the blob whenever
 ```
+
+Internally, Tensorflow models are used to extract the subject from the image whenever the local mask with `background` or `foreground` types are specified.
 
 ## AI Local Sky Mask
 
