@@ -1,6 +1,6 @@
-# Polarr Next Core
+# Polarr Next SDK
 
-Polarr Next Core is a highly modular framework for manupulating RAW and bitmap data in the browser.
+Polarr Next SDK implements a highly modular framework for manupulating RAW and bitmap data in the browser.
 
 ## Stack
 
@@ -46,7 +46,9 @@ renderer.use(PNGIOAdapter)
 renderer.use(AdjustmentsPipeline) 
 
 // Obtain (or create) File with one of supported RAW formats (for example, .arw file)
-const rawFile = await getRAWFile() 
+const response = await fetch("https://example.com/files/sample.arw")
+const blob = await response.blob()
+const rawFile = new File([blob], "sample.arw", { type: blob.type })
 
 // Import the RAW file bytes into the pipeline
 await renderer.import(rawFile)
@@ -205,7 +207,9 @@ renderer.use(RawIOAdapter)
 renderer.use(JPEGIOAdapter)
 
 // Obtain (or create) File with one of supported RAW formats (for example, .arw file)
-const rawFile = await getRAWFile() 
+const response = await fetch("https://example.com/files/sample.arw")
+const blob = await response.blob()
+const rawFile = new File([blob], "sample.arw", { type: blob.type })
 
 // Import the RAW file bytes into the pipeline
 await renderer.import(rawFile)
@@ -292,12 +296,6 @@ The JPEG IO module does not support `half` resolution to be requested.
 
 `npm install @polarr-next/adjustments`
 
-```typescript
-import { AdjustmentsPipeline } from "@polarr-next/adjustments"
-
-renderer.use(AdjustmentsPipeline)
-```
-
 Provides set of adjustments that can be applied to the whole image or to the part of it.
 
 ### Global Adjustments
@@ -319,7 +317,7 @@ export interface PointColorHSL {
 
 export interface Adjustments {
 	// Global
-    temperature: number
+	temperature: number
 	tint: number
 	exposure: number
 	shadows: number
@@ -334,12 +332,12 @@ export interface Adjustments {
 	texture: number
 	clarity: number
 	dehaze: number
-    sharpen: number
+    	sharpen: number
 
 	// Point color
 	pointColors: PointColorHSL[]
 
-    // Point curves
+    	// Point curves
 	curvesAll: Curve
 	curvesRed: Curve
 	curvesGreen: Curve
@@ -371,7 +369,7 @@ export interface Adjustments {
 	saturationMagenta: number
 	luminanceMagenta: number
 
-    // Calibration
+    	// Calibration
 	calibrationRedHue: number
 	calibrationRedSat: number
 	calibrationGreenHue: number
@@ -404,7 +402,7 @@ export interface Adjustments {
 	gradingBlending: number
 	gradingBalance: number
 
-    // Crop
+    	// Crop
 	cropStraighten: number
 	crop: Crop
 	cropRatio: CropRatio
@@ -414,7 +412,7 @@ export interface Adjustments {
 	flipX: boolean
 	flipY: boolean
 
-    // Transform & Perspective
+    	// Transform & Perspective
 	lensDistortion: number
 	perspectiveVertical: number
 	perspectiveHorizontal: number
@@ -424,13 +422,13 @@ export interface Adjustments {
 	perspectiveOffsetX: number
 	perspectiveOffsetY: number
 
-    // Grain
+   	 // Grain
 	grainAmount: number
 	grainSize: number
 	grainRoughness: number
 
-    // Any number of local adjustments
-    localAdjustments: LocalAdjustmentsGroup[]
+   	 // Any number of local adjustments
+    	localAdjustments: LocalAdjustmentsGroup[]
 }
 ```
 
@@ -570,12 +568,6 @@ Several masks can be combined together within one group to achieve precise image
 
 `npm install @polarr-next/denoise`
 
-```typescript
-import { DenoisePipeline } from "@polarr-next/denoise"
-
-renderer.use(DenoisePipeline)
-```
-
 This module depends on the adjustments module `@polarr-next/adjustments`
 
 Incorporates advanced denoise into the processing pipeline. The denoise is then automatically used for all imported photos.
@@ -608,14 +600,16 @@ renderer.use(AdjustmentsPipeline)
 renderer.use(DenoisePipeline) 
 
 // Obtain (or create) File with one of supported RAW formats (for example, .arw file)
-const rawFile = await getRAWFile() 
+const response = await fetch("https://example.com/files/sample.arw")
+const blob = await response.blob()
+const rawFile = new File([blob], "sample.arw", { type: blob.type })
 
 // Import the RAW file bytes into the pipeline
 await renderer.import(rawFile)
 
 // Apply denoise 
 renderer.setAdjustments({
-    luminanceNoiseReduction: 0.4
+	luminanceNoiseReduction: 0.4
 	colorNoiseReduction: 0.5
 })
 
@@ -624,20 +618,12 @@ const outputJPEGBlob = await renderer.export({
     format: "jpeg"
 })
 
-// Download, save, or send the blob whenever 
+// The blob now contains denoised JPEG file converted from RAW file 
 ```
 
 ## Local Healing Mask 
 
 `npm install @polarr-next/mask-healing`
-
-```typescript
-import { Adjustments } from "@polarr-next/adjustments"
-import { HealingPipeline } from "@polarr-next/healing"
-
-renderer.use(Adjustments)
-renderer.use(HealingPipeline)
-```
 
 Adds an ability to specify local image data regions to be filled with other regions within the same image (heal certain image spots).
 
@@ -666,14 +652,65 @@ export interface HealingAdjustments {
 }
 ```
 
-Usage example:
+### Apply Mixed Adjustments
+
+Here is an example of applying healing mixed with other global and local adjustments to the image:
 
 ```typescript
+import { Renderer } from "@polarr-next"
+import { RawIOAdapter } from "@polarr-next/io-raw"
+import { JPEGIOAdapter } from "@polarr-next/png-raw"
+import { AdjustmentsPipeline } from "@polarr-next/adjustments"
+import { DenoisePipeline } from "@polarr-next/denoise"
+import { HealingPipeline } from "@polarr-next/healing" 
+
+// Create an offscreen renderer with a managed context
+const renderer = new Renderer()
+
+// Register all modules
+renderer.use(RawIOAdapter)
+renderer.use(JPEGIOAdapter)
+renderer.use(AdjustmentsPipeline) 
+renderer.use(DenoisePipeline)
+renderer.use(HealingPipeline)
+
+// Obtain (or create) File with one of supported RAW formats (for example, .arw file)
+const response = await fetch("https://example.com/files/some-photo.arw")
+const blob = await response.blob()
+const rawFile = new File([blob], "some-photo.arw", { type: blob.type })
+
+// Import the RAW file bytes into the pipeline
+await renderer.import(rawFile)
+
 renderer.setAdjustments({
     // Some global adjustments
-    exposure: -0.1, 
+    exposure: -0.1,
+    highlights: -0.12,
+    shadows: 0.15,
+    clarity: 0.2,
+    dehaze: 0.1
 
-    // Healing patches
+    // One curve for all colors
+    curvesAll: [
+	[0, 0], [128, 105], [255, 255]
+    ]
+
+    // Replace reds with lighter more saturated greens using point color
+    pointColors: [
+       	{
+		color: [0.7, 0.1, 0.1],
+		hueShift: 0.5,
+		satShift: 0.1,
+		lumShift: 0.2,
+		range: 0.5
+	}
+    ],
+
+    // Denoise
+    luminanceNoiseReduction: 0.4
+    colorNoiseReduction: 0.5
+
+    // One healing patch to remove, for example, a socket in the wall
     healingAdjustments: [
         {
             source: {
@@ -691,6 +728,14 @@ renderer.setAdjustments({
         }
     ]
 })
+
+// When ready, export data as PNG bytes
+const outputJPEGBlob = await renderer.export({
+    format: "jpeg",
+    quality: 0.9
+})
+
+// Download, save, or send the blob whenever
 ```
 
 The specified destination region will be filled with pixel data from the source region. 
@@ -698,14 +743,6 @@ The specified destination region will be filled with pixel data from the source 
 ## AI Local Subject Mask
 
 `npm install @polarr-next/ai-mask-subject`
-
-```typescript
-import { Adjustments } from "@polarr-next/adjustments"
-import { AdjustmentsSubjectMask } from "@polarr-next/ai-mask-subject"
-
-renderer.use(Adjustments)
-renderer.use(AdjustmentsSubjectMask)
-```
 
 Adds an ability to add new `SubjectMask` and new `BackgroundMask` (inverted `SubjectMask`) as part of local adjustments with the following definition:
 
@@ -719,16 +756,42 @@ export interface BackgroundMask extends BaseMask {
 }
 ```
 
-Usage:
+### Adjust Subject And Background
+
+Here is an example of adjusting subject and background of the image at the same time:
 
 ```typescript
+import { Renderer } from "@polarr-next"
+import { RawIOAdapter } from "@polarr-next/io-raw"
+import { JPEGIOAdapter } from "@polarr-next/png-raw"
+import { AdjustmentsPipeline } from "@polarr-next/adjustments"
+import { AdjustmentsSubjectMask } from "@polarr-next/ai-mask-subject"
+
+// Create an offscreen renderer with a managed context
+const renderer = new Renderer()
+
+// Register all modules
+renderer.use(RawIOAdapter)
+renderer.use(JPEGIOAdapter)
+renderer.use(AdjustmentsPipeline)
+renderer.use(AdjustmentsSubjectMask)
+
+// Obtain (or create) File with one of supported RAW formats (for example, .arw file)
+const response = await fetch("https://example.com/files/photo-with-a-subject.arw")
+const blob = await response.blob()
+const rawFile = new File([blob], "photo-with-a-subject.arw", { type: blob.type })
+
+// Import the RAW file bytes into the pipeline
+await renderer.import(rawFile)
+
+// Adjust both subject and background
 renderer.setAdjustments({
     // Global adjustment
     exposure: -0.1,
 
     // Local adjustments
     localAdjustments: [
-        // Set specific adjustments to the foreground (subject)
+        // Set specific adjustments to image foreground (subject only)
         {
             active: true,
             masks: [
@@ -744,7 +807,7 @@ renderer.setAdjustments({
             contrast: 0.11
         }
 
-        // Set specific adjustments to the background (excluding subject):
+        // Set specific adjustments to image background (everything excluding subject):
         {
             active: true,
             masks: [
@@ -763,19 +826,19 @@ renderer.setAdjustments({
 
     ]
 })
+
+// When ready, export data as PNG bytes
+const outputJPEGBlob = await renderer.export({
+    format: "jpeg",
+    quality: 0.9
+})
+
+// Download, save, or send the blob whenever
 ```
 
 ## AI Local Sky Mask
 
 `npm install @polarr-next/ai-mask-sky`
-
-```typescript
-import { Adjustments } from "@polarr-next/adjustments"
-import { AdjustmentsSkyMask } from "@polarr-next/ai-sky-subject"
-
-renderer.use(Adjustments)
-renderer.use(AdjustmentsSkyMask)
-```
 
 Adds an ability to add new `SkyMask` as part of local adjustments with the following definition:
 
@@ -815,14 +878,6 @@ renderer.setAdjustments({
 
 `npm install @polarr-next/ai-straighten`
 
-```typescript
-import { Adjustments } from "@polarr-next/adjustments"
-import { AIStraightenPipeline } from "@polarr-next/ai-straighten"
-
-renderer.use(Adjustments)
-renderer.use(AdjustmentsSubjectMask)
-```
-
 Adds an ability to automatically calculate straighten value for the currently loaded image data.
 
 Usage:
@@ -844,14 +899,6 @@ After calling the method above, the following properties will be auto filled in 
 ## AI Auto Lighting & White Balance 
 
 `npm install @polarr-next/ai-lighting`
-
-```typescript
-import { Adjustments } from "@polarr-next/adjustments"
-import { AILightingPipeline } from "@polarr-next/ai-lighting"
-
-renderer.use(Adjustments)
-renderer.use(AILightingPipeline)
-```
 
 Adds an ability to automatically calculate lighting and white-balance values for the currently loaded image data.
 
@@ -881,7 +928,7 @@ After calling the method above, the following properties will be auto filled in 
 
 ## AI Auto Batch Adjustments
 
-`npm install @polarr-next/ai-group-adjustments`
+`npm install @polarr-next/ai-batch-adjustments`
 
 > _This module depends on the Adjustments module `@polarr-next/adjustments` to be installed._
 
