@@ -948,7 +948,6 @@ import { AdjustmentsPipeline } from "@polarr-next/adjustments"
 import { AILightingPipeline } from "@polarr-next/ai-lighting"
 import { AutoAdjustmentsGroup } from "@polarr-next/ai-batch-adjustments"
 
-
 // Create an offscreen renderer with a managed context
 const renderer = new Renderer()
 
@@ -1041,3 +1040,82 @@ else {
 ```
 
 > It is advisable to always keep the `AutoAdjustmentsGroup` instance in a worker so its processing does not block the UI.
+
+## Personalised AI Style 
+
+When working with the `@polarr-next/ai-batch-adjustments` module, it is also possible to store all applied adjustments (by user and automatically) as a style that can be saved and applied later on. The style contains all information that is necessary to reapply color adjustments to any group of photos.
+
+Here is an example that features saving a style and applying it between groups of photos:
+
+```typescript
+import { Renderer } from "@polarr-next"
+import { RawIOAdapter } from "@polarr-next/io-raw"
+import { PNGIOAdapter } from "@polarr-next/png-raw"
+import { AdjustmentsPipeline } from "@polarr-next/adjustments"
+import { AILightingPipeline } from "@polarr-next/ai-lighting"
+import { AutoAdjustmentsGroup } from "@polarr-next/ai-batch-adjustments"
+
+// Create an offscreen renderer with a managed context
+const renderer = new Renderer()
+
+// Register all modules for the base renderer
+renderer.use(RawIOAdapter)
+renderer.use(PNGIOAdapter)
+renderer.use(AdjustmentsPipeline) 
+renderer.use(AILightingPipeline)
+
+// Get the first group of RAW files to process (via network or local file system)
+const firstGroupFiles = await getAllRAWFilesToProcess()
+
+const firstGroup = new AutoAdjustmentsGroup({
+    renderer,
+    entries: firstGroupFiles.map((file) => { id: file.name, file }),
+    computedAdjustments: ["lighting"]
+})
+
+// Adjust some example file manually
+firstGroup.setAdjustments("special-file-id", {
+	exposure: -0.1,
+	saturation: 0.2,
+	highlights: 0.1
+})
+
+// Mark the example file as a reference
+firstGroup.markAsReference("special-file-id")
+
+// Start processing first group photos
+firstGroup.resume()
+
+// Wait for all photos to be processed in a group
+await firstGroup.waitUntilCompleted()
+
+// Compute the AI style to be saved for later
+// This returns a Blob that can be saved as a file on a filesystem or in a database
+const aiStyle = await firstGroup.saveAIStyle()
+
+// Later on, get the second batch of photos, different from the first batch and also process it
+// Get the first group of RAW files to process (via network or local file system)
+const secondGroupFiles = await getMoreRAWFilesToProcess()
+
+const secondGroup = new AutoAdjustmentsGroup({
+    renderer,
+    entries: secondGroupFiles.map((file) => { id: file.name, file }),
+    computedAdjustments: ["lighting"]
+})
+
+// Load previously saved AI style with a set of predefined smart adjustments
+secondGroup.loadAIStyle(aiStyle)
+
+// Start processing and wait until it finished
+secondGroup.resume()
+await secondGroup.waitUntilCompleted()
+
+// Process all photos with AI style applied and save them one by one
+for (const file in secondGroupFiles) {
+	await renderer.import(file)
+	renderer.setAdjustments(secondGroup.adjustments(file.name))
+	const jpegBlob = await renderer.export({ format: "jpeg" )
+
+	// Save JPEG blob somewhere on the filesystem or send via network
+}
+```
