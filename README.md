@@ -1143,6 +1143,9 @@ renderer.use(AILightingPipeline)
 // Get the first group of RAW files to process (via network or local file system)
 const firstGroupFiles = await getAllRAWFilesToProcess()
 
+// The AutoAdjustmentsGroup is essentially storage for all adjustments
+// Once the AutoAdjustmentsGroup.resume instance method is called, the adjustments are computed
+// And stored inside the AutoAdjustmentsGroup. 
 const firstGroup = new AutoAdjustmentsGroup({
     renderer,
     entries: firstGroupFiles.map((file) => { id: file.name, file }),
@@ -1167,6 +1170,9 @@ await firstGroup.waitUntilCompleted()
 
 // Compute the AI style to be saved for later
 // This returns a Blob that can be saved as a file on a filesystem or in a database
+// The AI style is a set of rules that can be applied to any AutoAdjustmentsGroup instance.
+// It doesn't specify exact adjustments for photos, but rather creates smart representation of mixed AI adjustments
+// and auto computed adjustments.
 const aiStyle = await firstGroup.saveAIStyle()
 
 // Later on, get the second batch of photos, different from the first batch and also process it
@@ -1179,16 +1185,20 @@ const secondGroup = new AutoAdjustmentsGroup({
     computedAdjustments: ["lighting"]
 })
 
-// Load previously saved AI style with a set of predefined smart adjustments
+// Load previously saved AI style with a set of predefined smart adjustment rules
+// The smart adjustments applied will be unique to each image based on image characteristics (ISO, exposure, portrait/landscape) 
 secondGroup.loadAIStyle(aiStyle)
 
 // Start processing and wait until it finished
 secondGroup.resume()
 await secondGroup.waitUntilCompleted()
 
-// Process all photos with AI style applied and save them one by one
+// Process all images with adjustments applied to them sequentially
 for (const file in secondGroupFiles) {
 	await renderer.import(file)
+	// Adjustments obtained from secondGroup are *unique* to each image
+	// The whole aiStyle preservers the overall look&feel of all adjustments from firstGroupFiles and tries to
+	// add the same look&feel to the secondGroupFiles.
 	renderer.setAdjustments(secondGroup.adjustments(file.name))
 	const jpegBlob = await renderer.export({ format: "jpeg" )
 
