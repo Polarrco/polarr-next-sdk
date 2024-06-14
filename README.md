@@ -704,6 +704,11 @@ renderer.setAdjustments({
 	}
     ],
 
+    // Color Grading
+    gradingHighlightsHue: 0.3,
+    gradingHighlightsSaturation: -0.3,
+    gradingHighlightsLuminance: 0.2,
+
     // Denoise
     luminanceNoiseReduction: 0.4
     colorNoiseReduction: 0.5
@@ -724,7 +729,46 @@ renderer.setAdjustments({
                 height: 0.1
             }
         }
-    ]
+    ],
+
+    {
+            // Radial mask with some additional adjustments
+            active: true,
+            masks: [
+                // Slightly feathered radial mask
+                {
+                    blendMode: "add",
+                    active: true,
+                    inverted: false,
+                    type: "radial",
+		    // Mask is at the center of the image
+                    centerX: 0.5,
+                    centerY: 0.5,
+                    radiusX: 0.1,
+                    radiusY: 0.2,
+                    angle: 0,
+                    feather: 0.2
+                },
+		{
+		    // Diagonal brush strokes from the corner of the image towards the center
+		    blendMode: "add",
+		    type: "brush",
+		    strokes: [{
+			// Points are specified by pairs (X, Y, X, Y, etc)
+			points: [0.0, 0.0, 0.1, 0.1, 0.2, 0.2, 0.3, 0.3],
+			feather: 0.3,
+			size: 0.4,
+			spacing: 0.1,
+		    }],
+		    active: true,
+		    inverted: false,
+		    blendMode: "add",
+		},
+            ],
+            // Group adjustments that are only applied to the radial mask
+            exposure: 0.2,
+            contrast: 0.11
+    }
 })
 
 // When ready, export data as PNG bytes
@@ -756,6 +800,35 @@ export interface BackgroundMask extends BaseMask {
 
 ### Adjust Subject And Background
 
+Here is an example of getting the mask directly from the `@polarr-next/ai-mask-subject` library:
+
+```typescript
+// This line of code imports the module to process AI Mask Subject
+// The module contains the Tensorflow model that is loaded to make processing possible.
+import { Renderer } from "@polarr-next"
+import { AdjustmentsSubjectMask } from "@polarr-next/ai-mask-subject"
+
+// Create an offscreen renderer with a managed context
+const renderer = new Renderer({
+	// It is possible to pass in the existing GL context to work with 
+	gl
+})
+
+// Create the subject mask model instance
+const subjectMaskModel = new AdjustmentsSubjectMask(renderer)
+
+// Set up the model (wait for the underlying Tensorflow model to be loaded)
+await subjectMaskModel.load()
+
+// Get the RAW mask data (0, 1) for the input texture
+// The texture can be either RGBA8 texture or RGBA16F texture with an image data.
+const mask = await subjectMaskModel.getMask({
+	texture
+})
+
+// The `mask` is an ArrayBuffer instance for 512x512 computed subject mask.
+```
+
 Here is an example of adjusting subject and background of the image at the same time using AI matting provided by `@polarr-next/ai-mask-subject`:
 
 ```typescript
@@ -763,6 +836,9 @@ import { Renderer } from "@polarr-next"
 import { RawIOAdapter } from "@polarr-next/io-raw"
 import { JPEGIOAdapter } from "@polarr-next/png-raw"
 import { AdjustmentsPipeline } from "@polarr-next/adjustments"
+
+// This line of code imports the module to process AI Mask Subject
+// The module contains the Tensorflow model that is loaded to make processing possible.
 import { AdjustmentsSubjectMask } from "@polarr-next/ai-mask-subject"
 
 // Create an offscreen renderer with a managed context
@@ -772,6 +848,8 @@ const renderer = new Renderer()
 renderer.use(RawIOAdapter)
 renderer.use(JPEGIOAdapter)
 renderer.use(AdjustmentsPipeline)
+
+// This line makes sure that the Tensorflow model from the @polarr-next/ai-mask-subject module is available to renderer
 renderer.use(AdjustmentsSubjectMask)
 
 // Obtain (or create) File with one of supported RAW formats (for example, .arw file)
