@@ -85,7 +85,7 @@ The core package is capable of the following features:
 - Register new pipeline steps
 - Registe import and export handlers
 
-The core package does not itself do any rendering, but instead acts as a glue for all Polarr Next modules: it allows modules to connect to the pipeline and use the provided WebGL2 context to do image processing.
+>`@polarr-next` does not itself do any rendering, but instead acts as a glue for all Polarr Next modules: it allows modules to connect to the pipeline and use the provided WebGL2 context to do image processing.
 
 _Note that the framework currently only supports editing one image at a time._
 
