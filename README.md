@@ -686,12 +686,12 @@ renderer.setAdjustments({
     highlights: -0.12,
     shadows: 0.15,
     clarity: 0.2,
-    dehaze: 0.1
+    dehaze: 0.1,
 
     // One curve for all colors
     curvesAll: [
 	[0, 0], [128, 105], [255, 255]
-    ]
+    ],
 
     // Replace reds with lighter more saturated greens using point color
     pointColors: [
@@ -710,8 +710,8 @@ renderer.setAdjustments({
     gradingHighlightsLuminance: 0.2,
 
     // Denoise
-    luminanceNoiseReduction: 0.4
-    colorNoiseReduction: 0.5
+    luminanceNoiseReduction: 0.4,
+    colorNoiseReduction: 0.5,
 
     // One healing patch to remove, for example, a socket in the wall
     healingAdjustments: [
@@ -731,7 +731,8 @@ renderer.setAdjustments({
         }
     ],
 
-    {
+    localAdjustments: [
+    	{
             // Radial mask with some additional adjustments
             active: true,
             masks: [
@@ -768,7 +769,8 @@ renderer.setAdjustments({
             // Group adjustments that are only applied to the radial mask
             exposure: 0.2,
             contrast: 0.11
-    }
+    	}
+    ]
 })
 
 // When ready, export data as PNG bytes
