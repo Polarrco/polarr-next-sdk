@@ -658,8 +658,7 @@ Here is an example of applying healing mixed with other global and local adjustm
 
 ```typescript
 import { Renderer } from "@polarr-next"
-import { RawIOAdapter } from "@polarr-next/io-raw"
-import { JPEGIOAdapter } from "@polarr-next/png-raw"
+import { JPEGIOAdapter } from "@polarr-next/jpeg-raw"
 import { AdjustmentsPipeline } from "@polarr-next/adjustments"
 import { DenoisePipeline } from "@polarr-next/denoise"
 import { HealingPipeline } from "@polarr-next/healing" 
@@ -668,19 +667,18 @@ import { HealingPipeline } from "@polarr-next/healing"
 const renderer = new Renderer()
 
 // Register all modules
-renderer.use(RawIOAdapter)
 renderer.use(JPEGIOAdapter)
 renderer.use(AdjustmentsPipeline) 
 renderer.use(DenoisePipeline)
 renderer.use(HealingPipeline)
 
-// Obtain (or create) File with one of supported RAW formats (for example, .arw file)
-const response = await fetch("https://example.com/files/some-photo.arw")
+// Obtain (or create) File with one of supported RAW formats (for example, .jpg file)
+const response = await fetch("https://example.com/files/some-photo.jpg")
 const blob = await response.blob()
-const rawFile = new File([blob], "some-photo.arw", { type: blob.type })
+const jpgFile = new File([blob], "some-photo.jpg", { type: blob.type })
 
 // Import the RAW file bytes into the pipeline
-await renderer.import(rawFile)
+await renderer.import(jpgFile)
 
 renderer.setAdjustments({
     // Some global adjustments
